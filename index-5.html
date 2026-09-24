@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="Chat local completo para Acode">
+<title>LocalChat</title>
+<style>
+:root{
+  --bg:#f3f4f6;--panel:#fff;--panel2:#eef1f5;--text:#111827;--muted:#6b7280;
+  --line:#e5e7eb;--primary:#2563eb;--primary2:#1d4ed8;--bubble:#e8eefc;
+  --danger:#dc2626;--shadow:0 8px 30px rgba(0,0,0,.10);
+}
+[data-theme="dark"]{
+  --bg:#0b1120;--panel:#111827;--panel2:#182235;--text:#f3f4f6;--muted:#9ca3af;
+  --line:#263244;--primary:#3b82f6;--primary2:#60a5fa;--bubble:#172554;
+  --danger:#f87171;--shadow:0 8px 30px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,textarea{font:inherit}
+button{border:0;cursor:pointer}
+.hidden{display:none!important}
+.app{height:100dvh;display:flex;overflow:hidden}
+.sidebar{width:330px;min-width:280px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column}
+.brand{padding:16px 16px 10px;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:space-between}
+.brand small{font-size:11px;color:var(--muted);font-weight:500}
+.search{padding:8px 12px 12px}
+.search input,.field input,.field textarea{
+  width:100%;background:var(--panel2);border:1px solid transparent;border-radius:14px;
+  padding:11px 13px;color:var(--text);outline:none
+}
+.search input:focus,.field input:focus,.field textarea:focus{border-color:var(--primary)}
+.tabs{display:flex;padding:0 10px 8px;gap:6px}
+.tab{flex:1;padding:9px 7px;border-radius:10px;background:transparent;color:var(--muted)}
+.tab.active{background:var(--bubble);color:var(--primary);font-weight:700}
+.list{overflow:auto;flex:1;padding:4px 8px}
+.item{display:flex;align-items:center;gap:10px;padding:11px 9px;border-radius:14px;margin:2px 0}
+.item:hover{background:var(--panel2)}
+.item.active{background:var(--bubble)}
+.avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#7c3aed);color:white;display:grid;place-items:center;font-weight:800;flex:none;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.item-main{min-width:0;flex:1}
+.item-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-last{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
+.item-time{font-size:10px;color:var(--muted)}
+.side-bottom{padding:10px;border-top:1px solid var(--line);display:flex;gap:8px}
+.icon-btn,.round-btn{background:var(--panel2);color:var(--text);border-radius:12px;padding:10px;min-width:42px;min-height:42px}
+.icon-btn:hover,.round-btn:hover{filter:brightness(.96)}
+.main{min-width:0;flex:1;display:flex;flex-direction:column;background:var(--bg)}
+.topbar{height:64px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:8px 12px}
+.top-info{min-width:0;flex:1}
+.top-name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-status{font-size:11px;color:var(--muted)}
+.messages{flex:1;overflow:auto;padding:18px max(12px,calc((100vw - 900px)/2));display:flex;flex-direction:column;gap:7px}
+.day{text-align:center;color:var(--muted);font-size:11px;margin:8px}
+.msg{max-width:min(76%,520px);display:flex;flex-direction:column}
+.msg.me{align-self:flex-end;align-items:flex-end}
+.msg.them{align-self:flex-start;align-items:flex-start}
+.bubble{background:var(--panel);border:1px solid var(--line);padding:9px 11px;border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.04);overflow:hidden}
+.me .bubble{background:var(--primary);color:#fff;border-color:var(--primary)}
+.meta{font-size:10px;color:var(--muted);margin:3px 5px}
+.me .meta{color:var(--muted)}
+.sender{font-size:10px;font-weight:800;color:var(--primary);margin:0 6px 3px}
+.me .sender{display:none}
+.text{white-space:pre-wrap;word-break:break-word}
+.media-img,.media-video{display:block;max-width:100%;max-height:360px;border-radius:12px;background:#000}
+.audio-wrap{min-width:220px}
+.audio-wrap audio{width:100%}
+.reply-box{font-size:11px;padding:6px 8px;border-left:3px solid currentColor;opacity:.8;margin-bottom:6px}
+.composer{background:var(--panel);border-top:1px solid var(--line);padding:8px max(10px,calc((100vw - 900px)/2));padding-bottom:max(8px,env(safe-area-inset-bottom));}
+.replying{background:var(--panel2);border-radius:10px;padding:7px 10px;margin-bottom:7px;font-size:12px;display:flex;justify-content:space-between}
+.compose-row{display:flex;gap:7px;align-items:flex-end}
+.compose-input{flex:1;min-width:0;resize:none;max-height:120px;min-height:43px;padding:11px 12px;border-radius:15px;border:1px solid var(--line);background:var(--panel2);color:var(--text);outline:none}
+.send{background:var(--primary);color:#fff;border-radius:14px;min-width:45px;height:45px;font-size:18px}
+.attach-menu{display:flex;gap:5px;overflow:auto;padding-bottom:7px}
+.attach-menu button{background:var(--panel2);color:var(--text);border-radius:11px;padding:8px 10px;white-space:nowrap}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:15px;z-index:50}
+.modal{width:min(520px,100%);max-height:90dvh;overflow:auto;background:var(--panel);border-radius:20px;box-shadow:var(--shadow);padding:18px}
+.modal h2{margin:0 0 15px;font-size:20px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.close{background:var(--panel2);color:var(--text);border-radius:10px;padding:8px 11px}
+.field{margin:10px 0}.field label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}
+.primary{background:var(--primary);color:#fff;border-radius:12px;padding:11px 14px;font-weight:700}
+.secondary{background:var(--panel2);color:var(--text);border-radius:12px;padding:11px 14px}
+.danger{background:var(--danger);color:#fff;border-radius:12px;padding:11px 14px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.profile-preview{width:92px;height:92px;border-radius:50%;margin:auto;background:var(--panel2);overflow:hidden;display:grid;place-items:center;font-size:30px;font-weight:800}
+.profile-preview img{width:100%;height:100%;object-fit:cover}
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;max-height:280px;overflow:auto}
+.emoji-grid button{background:transparent;font-size:24px;padding:7px;border-radius:9px}
+.emoji-grid button:hover{background:var(--panel2)}
+#toast{position:fixed;left:50%;bottom:85px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:12px;font-size:12px;z-index:100;opacity:0;pointer-events:none;transition:.2s}
+#toast.show{opacity:1}
+.recorder{display:grid;gap:10px}
+.recorder video{width:100%;max-height:45vh;background:#000;border-radius:14px}
+.rec-time{text-align:center;font-weight:800}
+.empty{color:var(--muted);text-align:center;padding:30px 15px}
+.menu-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line)}
+.menu-row:last-child{border-bottom:0}
+.switch{position:relative;width:48px;height:28px}.switch input{display:none}
+.switch span{position:absolute;inset:0;border-radius:20px;background:var(--panel2);cursor:pointer}
+.switch span:before{content:"";position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.switch input:checked+span{background:var(--primary)}
+.switch input:checked+span:before{transform:translateX(20px)}
+.context-menu{position:fixed;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:12px;z-index:80;overflow:hidden}
+.context-menu button{display:block;width:100%;text-align:left;padding:11px 14px;background:transparent;color:var(--text)}
+.context-menu button:hover{background:var(--panel2)}
+.mobile-only{display:none}
+@media(max-width:720px){
+ .sidebar{width:100%;min-width:0}.main{display:none}
+ .app.chat-open .sidebar{display:none}.app.chat-open .main{display:flex}
+ .mobile-only{display:block}
+ .msg{max-width:86%}
+ .topbar{height:60px}
+ .messages{padding:12px 9px}
+ .composer{padding-left:7px;padding-right:7px}
+ .attach-menu button{padding:7px 8px}
+}
+
+/* Tela inicial de login — preparada para validação pelo servidor */
+#loginScreen{
+  position:fixed;inset:0;z-index:200;
+  display:grid;place-items:center;padding:20px;
+  background:linear-gradient(160deg,#0b1120,#172554);
+}
+.login-card{
+  width:min(420px,100%);background:#fff;color:#111827;border-radius:24px;
+  padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.30);
+}
+.login-logo{font-size:34px;text-align:center;margin-bottom:6px}
+.login-title{text-align:center;margin:0;font-size:26px}
+.login-subtitle{text-align:center;color:#6b7280;font-size:13px;margin:7px 0 22px}
+.login-card label{display:block;font-size:12px;font-weight:700;color:#4b5563;margin:12px 0 6px}
+.login-card input{
+  width:100%;padding:13px;border:1px solid #d1d5db;border-radius:13px;
+  outline:none;background:#f9fafb;color:#111827;
+}
+.login-card input:focus{border-color:#2563eb}
+.login-btn{
+  width:100%;margin-top:18px;padding:13px;border-radius:13px;
+  background:#2563eb;color:#fff;font-weight:800;font-size:15px;
+}
+.login-note{
+  margin-top:14px;text-align:center;color:#6b7280;font-size:11px;line-height:1.45;
+}
+.login-error{
+  display:none;margin-top:10px;padding:9px;border-radius:10px;
+  background:#fee2e2;color:#991b1b;font-size:12px;text-align:center;
+}
+
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">💬</div>
+    <h1 class="login-title">LocalChat</h1>
+    <div class="login-subtitle">Entre na sua conta para continuar</div>
+
+    <label for="loginUser">Nome de usuário</label>
+    <input id="loginUser" autocomplete="username" placeholder="Digite seu nome">
+
+    <label for="loginPass">Senha</label>
+    <input id="loginPass" type="password" autocomplete="current-password" placeholder="Digite sua senha">
+
+    <div id="loginError" class="login-error"></div>
+
+    <button id="loginBtn" class="login-btn">Entrar</button>
+
+    <div class="login-note">
+      As contas serão autorizadas pelo administrador.<br>
+      A validação real da conta será feita pelo servidor.
+    </div>
+  </div>
+</div>
+
+<div id="app" class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div>💬 LocalChat <small>offline</small></div>
+      <button class="icon-btn" id="profileBtn" title="Perfil">👤</button>
+    </div>
+    <div class="search"><input id="chatSearch" placeholder="Pesquisar conversas..."></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="all">Conversas</button>
+      <button class="tab" data-tab="rooms">Salas</button>
+    </div>
+    <div id="conversationList" class="list"></div>
+    <div class="side-bottom">
+      <button class="icon-btn" id="newChatBtn" title="Nova conversa">➕</button>
+      <button class="icon-btn" id="newRoomBtn" title="Nova sala">🏠</button>
+      <button class="icon-btn" id="settingsBtn" title="Configurações">⚙️</button>
+      <button class="icon-btn" id="themeBtn" title="Tema">🌙</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn mobile-only" id="backBtn">‹</button>
+      <div id="topAvatar" class="avatar">?</div>
+      <div class="top-info">
+        <div id="topName" class="top-name">Selecione uma conversa</div>
+        <div id="topStatus" class="top-status">Suas mensagens ficam no aparelho</div>
+      </div>
+      <button class="icon-btn" id="searchMessagesBtn" title="Pesquisar mensagens">🔎</button>
+      <button class="icon-btn" id="conversationInfoBtn" title="Informações">⋮</button>
+    </header>
+
+    <section id="messages" class="messages">
+      <div class="empty">Escolha uma conversa para começar.</div>
+    </section>
+
+    <footer class="composer">
+      <div id="replying" class="replying hidden"><span id="replyText"></span><button class="close" id="cancelReply">✕</button></div>
+      <div class="attach-menu">
+        <button id="emojiBtn">😀 Emoji</button>
+        <button id="photoBtn">🖼️ Foto</button>
+        <button id="videoFileBtn">🎬 Vídeo</button>
+        <button id="voiceBtn">🎤 Áudio</button>
+        <button id="videoMsgBtn">📹 Vídeo mensagem</button>
+      </div>
+      <div class="compose-row">
+        <textarea id="messageInput" class="compose-input" rows="1" placeholder="Digite uma mensagem..."></textarea>
+        <button id="sendBtn" class="send">➤</button>
+      </div>
+    </footer>
+  </main>
+</div>
+
+<input id="imageInput" type="file" accept="image/*" hidden>
+<input id="videoInput" type="file" accept="video/*" hidden>
+<input id="profileInput" type="file" accept="image/*" hidden>
+
+<div id="toast"></div>
+
+<div id="modalBg" class="modal-bg hidden">
+  <div id="modal" class="modal"></div>
+</div>
+
+<div id="contextMenu" class="context-menu hidden"></div>
+
+<script>
+"use strict";
+
+/* Tela de login: nesta etapa é apenas a interface.
+   A autenticação real será ligada ao servidor/banco na próxima etapa. */
+(function(){
+  const loginBtn = document.getElementById("loginBtn");
+  const user = document.getElementById("loginUser");
+  const pass = document.getElementById("loginPass");
+  const error = document.getElementById("loginError");
+
+  loginBtn.addEventListener("click", function(){
+    error.textContent = "A conta ainda será conectada ao servidor.";
+    error.style.display = "block";
+  });
+
+  [user,pass].forEach(el => el.addEventListener("keydown", e => {
+    if(e.key === "Enter") loginBtn.click();
+  }));
+})();
+
+
+/* ==========================================================
+   LOCALCHAT - arquivo único para Acode
+   Tudo funciona localmente no aparelho.
+   Não usa bibliotecas externas nem servidor.
+   ========================================================== */
+
+const DB_NAME = "LocalChatDB";
+const DB_VERSION = 1;
+let db;
+let state = {
+  profile:{name:"Você", avatarId:null},
+  theme:"dark",
+  conversations:[],
+  currentId:null,
+  currentTab:"all",
+  search:"",
+  messageSearch:"",
+  replyTo:null
+};
+
+const $ = id => document.getElementById(id);
+
+function uid(prefix="id"){
+  return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8);
+}
+function esc(s=""){
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+function fmtTime(ts){
+  return new Date(ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+}
+function fmtDate(ts){
+  return new Date(ts).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
+}
+function initials(name=""){
+  return name.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase() || "?";
+}
+function toast(msg){
+  const el=$("toast"); el.textContent=msg; el.classList.add("show");
+  clearTimeout(window.__toast); window.__toast=setTimeout(()=>el.classList.remove("show"),2200);
+}
+
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_NAME,DB_VERSION);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains("settings")) d.createObjectStore("settings",{keyPath:"key"});
+      if(!d.objectStoreNames.contains("conversations")) d.createObjectStore("conversations",{keyPath:"id"});
+      if(!d.objectStoreNames.contains("messages")) {
+        const s=d.createObjectStore("messages",{keyPath:"id"});
+        s.createIndex("convId","convId",{unique:false});
+        s.createIndex("timestamp","timestamp",{unique:false});
+      }
+      if(!d.objectStoreNames.contains("media")) d.createObjectStore("media",{keyPath:"id"});
+    };
+    req.onsuccess=()=>{db=req.result;resolve(db)};
+    req.onerror=()=>reject(req.error);
+  });
+}
+function tx(store,mode="readonly"){
+  return db.transaction(store,mode).objectStore(store);
+}
+function put(store,obj){
+  return new Promise((resolve,reject)=>{
+    const r=tx(store,"readwrite").put(obj); r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error);
+  });
+}
+function get(store,key){
+  return new Promise((resolve,reject)=>{
+    const r=tx(store).get(key); r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error);
+  });
+}
+function getAll(store){
+  return new Promise((resolve,reject)=>{
+    const r=tx(store).getAll(); r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error);
+  });
+}
+function remove(store,key){
+  return new Promise((resolve,reject)=>{
+    const r=tx(store,"readwrite").delete(key); r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error);
+  });
+}
+function clearStore(store){
+  return new Promise((resolve,reject)=>{
+    const r=tx(store,"readwrite").clear(); r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error);
+  });
+}
+
+async function saveSetting(key,value){await put("settings",{key,value})}
+async function loadSettings(){
+  const p=await get("settings","profile");
+  const t=await get("settings","theme");
+  if(p?.value) state.profile=p.value;
+  if(t?.value) state.theme=t.value;
+}
+
+async function seed(){
+  let conversations=await getAll("conversations");
+  if(conversations.length) return;
+  const now=Date.now();
+  const seeds=[
+    {id:"room_geral",type:"room",name:"Geral",description:"Conversa geral",avatar:"💬",updatedAt:now-3000},
+    {id:"room_amigos",type:"room",name:"Amigos",description:"Sala dos amigos",avatar:"👥",updatedAt:now-2000},
+    {id:"room_jogos",type:"room",name:"Jogos",description:"Games e diversão",avatar:"🎮",updatedAt:now-1000},
+    {id:"private_ana",type:"private",name:"Ana",description:"Conversa privada local",avatar:"A",updatedAt:now}
+  ];
+  for(const c of seeds) await put("conversations",c);
+  const msgs=[
+    {id:uid("m"),convId:"room_geral",sender:"Sistema",senderId:"system",type:"text",text:"Bem-vindo ao LocalChat! Tudo fica salvo no seu aparelho.",timestamp:now-3000},
+    {id:uid("m"),convId:"room_geral",sender:"Você",senderId:"me",type:"text",text:"Olá! 👋",timestamp:now-2800},
+    {id:uid("m"),convId:"room_geral",sender:"Lucas",senderId:"other",type:"text",text:"Esse chat funciona direto no Acode.",timestamp:now-2500},
+    {id:uid("m"),convId:"room_amigos",sender:"Marina",senderId:"other",type:"text",text:"Oi pessoal 😄",timestamp:now-1900},
+    {id:uid("m"),convId:"room_jogos",sender:"Rafa",senderId:"other",type:"text",text:"Qual jogo vamos jogar?",timestamp:now-900},
+    {id:uid("m"),convId:"private_ana",sender:"Ana",senderId:"other",type:"text",text:"Oi! Essa é uma conversa privada local.",timestamp:now-500}
+  ];
+  for(const m of msgs) await put("messages",m);
+}
+
+async function loadConversations(){
+  state.conversations=await getAll("conversations");
+  state.conversations.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+}
+
+async function getMessages(convId){
+  const all=await getAll("messages");
+  return all.filter(m=>m.convId===convId).sort((a,b)=>a.timestamp-b.timestamp);
+}
+
+async function saveMessage(m){
+  await put("messages",m);
+  const c=state.conversations.find(x=>x.id===m.convId);
+  if(c){
+    c.updatedAt=m.timestamp;
+    c.lastMessage=m.type==="text"?m.text:({image:"📷 Foto",video:"🎬 Vídeo",audio:"🎤 Áudio"}[m.type]||"Mensagem");
+    await put("conversations",c);
+  }
+  await loadConversations();
+}
+
+async function getMedia(id){ return id ? await get("media",id) : null; }
+
+function avatarHTML(c,sizeClass=""){
+  const letter=c.avatar || initials(c.name);
+  return `<div class="avatar ${sizeClass}">${esc(letter)}</div>`;
+}
+
+async function renderList(){
+  const list=$("conversationList");
+  const q=state.search.trim().toLowerCase();
+  let arr=state.conversations.filter(c=>{
+    if(state.currentTab==="rooms" && c.type!=="room") return false;
+    if(state.currentTab==="all" && c.type!=="private") return false;
+    if(q && !(c.name+" "+(c.description||"")+" "+(c.lastMessage||"")).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if(state.currentTab==="all" && !arr.length){
+    arr=state.conversations.filter(c=>c.type==="room" && (!q || c.name.toLowerCase().includes(q)));
+  }
+  list.innerHTML="";
+  if(!arr.length){list.innerHTML='<div class="empty">Nenhuma conversa encontrada.</div>';return;}
+  for(const c of arr){
+    const el=document.createElement("div");
+    el.className="item"+(c.id===state.currentId?" active":"");
+    el.innerHTML=`
+      ${avatarHTML(c)}
+      <div class="item-main">
+        <div class="item-name">${esc(c.name)} ${c.type==="room"?"🏠":""}</div>
+        <div class="item-last">${esc(c.lastMessage||c.description||"Sem mensagens")}</div>
+      </div>
+      <div class="item-time">${c.updatedAt?fmtTime(c.updatedAt):""}</div>`;
+    el.onclick=()=>openConversation(c.id);
+    list.appendChild(el);
+  }
+}
+
+async function openConversation(id){
+  state.currentId=id; state.messageSearch=""; state.replyTo=null;
+  $("app").classList.add("chat-open");
+  await renderList();
+  await renderHeader();
+  await renderMessages();
+  updateReply();
+}
+
+async function renderHeader(){
+  const c=state.conversations.find(x=>x.id===state.currentId);
+  if(!c){$("topName").textContent="Selecione uma conversa";$("topStatus").textContent="";$("topAvatar").textContent="?";return;}
+  $("topName").textContent=c.name;
+  $("topStatus").textContent=c.type==="room" ? (c.description||"Sala local") : "Conversa privada local";
+  $("topAvatar").textContent=c.avatar||initials(c.name);
+}
+
+async function renderMessages(){
+  const box=$("messages");
+  const c=state.conversations.find(x=>x.id===state.currentId);
+  if(!c){box.innerHTML='<div class="empty">Escolha uma conversa para começar.</div>';return;}
+  let msgs=await getMessages(c.id);
+  if(state.messageSearch){
+    const q=state.messageSearch.toLowerCase();
+    msgs=msgs.filter(m=>(m.text||"").toLowerCase().includes(q));
+  }
+  box.innerHTML="";
+  if(!msgs.length){
+    box.innerHTML='<div class="empty">Nenhuma mensagem encontrada.</div>';return;
+  }
+  let lastDay="";
+  for(const m of msgs){
+    const day=fmtDate(m.timestamp);
+    if(day!==lastDay){
+      const d=document.createElement("div");d.className="day";d.textContent=day;box.appendChild(d);lastDay=day;
+    }
+    box.appendChild(await messageElement(m));
+  }
+  box.scrollTop=box.scrollHeight;
+}
+
+async function messageElement(m){
+  const mine=m.senderId==="me" || m.sender===state.profile.name;
+  const el=document.createElement("div");
+  el.className="msg "+(mine?"me":"them");
+  let content="";
+  if(m.replyTo){
+    const r=await get("messages",m.replyTo);
+    if(r) content+=`<div class="reply-box">↩ ${esc((r.text||"Mensagem").slice(0,120))}</div>`;
+  }
+  if(m.type==="text") content+=`<div class="text">${esc(m.text)}</div>`;
+  else if(m.type==="image"){
+    const med=await getMedia(m.mediaId);
+    if(med?.blob){
+      const url=URL.createObjectURL(med.blob);
+      content+=`<img class="media-img" src="${url}" alt="Foto">`;
+    }else content+="<div>📷 Foto indisponível</div>";
+  } else if(m.type==="video"){
+    const med=await getMedia(m.mediaId);
+    if(med?.blob){
+      const url=URL.createObjectURL(med.blob);
+      content+=`<video class="media-video" controls playsinline src="${url}"></video>`;
+    }else content+="<div>🎬 Vídeo indisponível</div>";
+  } else if(m.type==="audio"){
+    const med=await getMedia(m.mediaId);
+    if(med?.blob){
+      const url=URL.createObjectURL(med.blob);
+      content+=`<div class="audio-wrap">🎤 Áudio<br><audio controls src="${url}"></audio></div>`;
+    }else content+="<div>🎤 Áudio indisponível</div>";
+  }
+  el.innerHTML=`
+    ${!mine?`<div class="sender">${esc(m.sender||"Usuário")}</div>`:""}
+    <div class="bubble">${content}</div>
+    <div class="meta">${fmtTime(m.timestamp)} ${mine?"✓":""}</div>`;
+  el.addEventListener("contextmenu",e=>{e.preventDefault();showContextMenu(e.clientX,e.clientY,m)});
+  el.addEventListener("click",e=>{
+    if(e.detail===2) startReply(m);
+  });
+  return el;
+}
+
+function updateReply(){
+  const r=state.replyTo;
+  $("replying").classList.toggle("hidden",!r);
+  if(r)$("replyText").textContent="Respondendo: "+(r.text||"mídia").slice(0,100);
+}
+
+function startReply(m){state.replyTo=m;updateReply();$("messageInput").focus()}
+function showContextMenu(x,y,m){
+  const cm=$("contextMenu");cm.innerHTML="";
+  const reply=document.createElement("button");reply.textContent="↩ Responder";reply.onclick=()=>{cm.classList.add("hidden");startReply(m)};
+  const del=document.createElement("button");del.textContent="🗑️ Apagar";del.onclick=async()=>{cm.classList.add("hidden");await remove("messages",m.id);await renderMessages();toast("Mensagem apagada")};
+  cm.append(reply,del);cm.style.left=Math.min(x,innerWidth-180)+"px";cm.style.top=Math.min(y,innerHeight-100)+"px";cm.classList.remove("hidden");
+}
+
+async function sendText(){
+  if(!state.currentId){toast("Abra uma conversa primeiro");return}
+  const input=$("messageInput");const text=input.value.trim();if(!text)return;
+  const m={id:uid("m"),convId:state.currentId,sender:state.profile.name,senderId:"me",type:"text",text,timestamp:Date.now(),replyTo:state.replyTo?.id||null};
+  input.value="";autoGrow(input);state.replyTo=null;updateReply();
+  await saveMessage(m);await renderMessages();await renderList();
+}
+
+async function saveMediaBlob(blob){
+  const id=uid("media");
+  await put("media",{id,blob,mime:blob.type||"application/octet-stream",size:blob.size});
+  return id;
+}
+
+async function sendMedia(blob,type){
+  if(!state.currentId){toast("Abra uma conversa primeiro");return}
+  const mediaId=await saveMediaBlob(blob);
+  await saveMessage({id:uid("m"),convId:state.currentId,sender:state.profile.name,senderId:"me",type,mediaId,timestamp:Date.now(),replyTo:state.replyTo?.id||null});
+  state.replyTo=null;updateReply();await renderMessages();await renderList();
+}
+
+$("sendBtn").onclick=sendText;
+$("messageInput").addEventListener("input",e=>autoGrow(e.target));
+$("messageInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendText()}
+});
+function autoGrow(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,120)+"px"}
+
+$("chatSearch").addEventListener("input",e=>{state.search=e.target.value;renderList()});
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+  state.currentTab=b.dataset.tab;renderList();
+});
+
+$("backBtn").onclick=()=>$("app").classList.remove("chat-open");
+$("cancelReply").onclick=()=>{state.replyTo=null;updateReply()};
+$("contextMenu").addEventListener("mouseleave",()=>setTimeout(()=>$("contextMenu").classList.add("hidden"),400));
+document.addEventListener("click",e=>{
+  if(!e.target.closest("#contextMenu"))$("contextMenu").classList.add("hidden");
+});
+
+$("emojiBtn").onclick=showEmojiModal;
+$("photoBtn").onclick=()=>$("imageInput").click();
+$("videoFileBtn").onclick=()=>$("videoInput").click();
+$("imageInput").onchange=async e=>{const f=e.target.files[0];if(f)await sendMedia(f,"image");e.target.value=""};
+$("videoInput").onchange=async e=>{const f=e.target.files[0];if(f)await sendMedia(f,"video");e.target.value=""};
+
+$("voiceBtn").onclick=()=>startRecorder("audio");
+$("videoMsgBtn").onclick=()=>startRecorder("video");
+
+async function startRecorder(kind){
+  if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder){
+    toast("Seu navegador/Acode não permite gravação aqui.");
+    return;
+  }
+  let stream;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia(kind==="video"?{video:{facingMode:"user"},audio:true}:{audio:true});
+  }catch(err){
+    toast("Permissão de câmera/microfone negada ou indisponível.");
+    return;
+  }
+  const modal=$("modalBg"),m=$("modal");
+  const preview=kind==="video"?`<video id="recPreview" autoplay muted playsinline></video>`:"";
+  m.innerHTML=`<div class="modal-head"><h2>${kind==="video"?"📹 Vídeo mensagem":"🎤 Mensagem de áudio"}</h2><button class="close" id="recClose">✕</button></div>
+  <div class="recorder">${preview}<div class="rec-time" id="recTime">00:00</div>
+  <div class="actions"><button class="danger" id="stopRec">⏹ Parar e salvar</button></div></div>`;
+  modal.classList.remove("hidden");
+  if(kind==="video")$("recPreview").srcObject=stream;
+  let chunks=[],start=Date.now();
+  const timer=setInterval(()=>{$("recTime").textContent=msTime(Date.now()-start)},500);
+  const options={};
+  if(MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus"))options.mimeType="video/webm;codecs=vp9,opus";
+  else if(MediaRecorder.isTypeSupported("video/webm"))options.mimeType="video/webm";
+  else if(MediaRecorder.isTypeSupported("audio/webm"))options.mimeType="audio/webm";
+  const rec=new MediaRecorder(stream,options);
+  rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+  let stopped=false;
+  const cleanup=()=>{clearInterval(timer);stream.getTracks().forEach(t=>t.stop());modal.classList.add("hidden")};
+  $("recClose").onclick=()=>{if(!stopped){stopped=true;rec.stop()}cleanup()};
+  $("stopRec").onclick=()=>{
+    if(stopped)return;stopped=true;
+    rec.onstop=async()=>{
+      const blob=new Blob(chunks,{type:rec.mimeType||kind==="video"?"video/webm":"audio/webm"});
+      cleanup();await sendMedia(blob,kind==="video"?"video":"audio");
+    };
+    rec.stop();
+  };
+}
+function msTime(ms){let s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")}
+
+function showEmojiModal(){
+  const emojis="😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🫡 🤭 🤫 🤥 😶 😐 😑 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🤑 🤠 😈 👿 👹 👺 🤡 💩 👻 💀 ☠️ 👽 🤖 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾 ❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 👍 👎 👌 ✌️ 🤞 🤟 🤘 👊 ✊ 🤝 🙏 👏 🙌 💪 🔥 ⭐ ✨ 🎉 🎊 🚀 💯 ✅ ❌ ⚡ 🎮 🎵 📱 💻 🍕 🍔 ☕ 🍺 ⚽ 🏆".split(" ");
+  openModal("😀 Emojis",`<div class="emoji-grid">${emojis.map(e=>`<button data-emoji="${e}">${e}</button>`).join("")}</div>`);
+  document.querySelectorAll("[data-emoji]").forEach(b=>b.onclick=()=>{
+    const i=$("messageInput");i.value+=b.dataset.emoji;i.focus();closeModal();
+  });
+}
+
+function openModal(title,body){
+  $("modal").innerHTML=`<div class="modal-head"><h2>${title}</h2><button class="close" onclick="closeModal()">✕</button></div>${body}`;
+  $("modalBg").classList.remove("hidden");
+}
+function closeModal(){$("modalBg").classList.add("hidden");$("modal").innerHTML=""}
+$("modalBg").addEventListener("click",e=>{if(e.target===$("modalBg"))closeModal()});
+
+$("newChatBtn").onclick=async()=>{
+  openModal("➕ Nova conversa",`
+    <div class="field"><label>Nome</label><input id="newName" placeholder="Ex.: João"></div>
+    <div class="actions"><button class="primary" id="createChat">Criar conversa</button></div>`);
+  $("createChat").onclick=async()=>{
+    const name=$("newName").value.trim();if(!name)return toast("Digite um nome");
+    const c={id:uid("private"),type:"private",name,description:"Conversa privada local",avatar:initials(name),updatedAt:Date.now()};
+    await put("conversations",c);closeModal();await loadConversations();await renderList();await openConversation(c.id);
+  };
+};
+
+$("newRoomBtn").onclick=async()=>{
+  openModal("🏠 Nova sala",`
+    <div class="field"><label>Nome da sala</label><input id="roomName" placeholder="Ex.: Família"></div>
+    <div class="field"><label>Descrição</label><input id="roomDesc" placeholder="Sobre o que é a sala?"></div>
+    <div class="actions"><button class="primary" id="createRoom">Criar sala</button></div>`);
+  $("createRoom").onclick=async()=>{
+    const name=$("roomName").value.trim();if(!name)return toast("Digite um nome");
+    const c={id:uid("room"),type:"room",name,description:$("roomDesc").value.trim()||"Sala local",avatar:"🏠",updatedAt:Date.now()};
+    await put("conversations",c);
+    await saveMessage({id:uid("m"),convId:c.id,sender:"Sistema",senderId:"system",type:"text",text:`Sala "${name}" criada.`,timestamp:Date.now()});
+    closeModal();await loadConversations();await renderList();await openConversation(c.id);
+  };
+};
+
+$("profileBtn").onclick=showProfile;
+$("settingsBtn").onclick=showSettings;
+$("themeBtn").onclick=toggleTheme;
+
+async function showProfile(){
+  const med=await getMedia(state.profile.avatarId);
+  let avatar=`<div class="profile-preview">${initials(state.profile.name)}</div>`;
+  if(med?.blob)avatar=`<div class="profile-preview"><img src="${URL.createObjectURL(med.blob)}"></div>`;
+  openModal("👤 Meu perfil",`
+    ${avatar}
+    <div class="field"><label>Nome</label><input id="profileName" value="${esc(state.profile.name)}"></div>
+    <div class="actions">
+      <button class="secondary" id="chooseProfile">📷 Foto de perfil</button>
+      <button class="primary" id="saveProfile">Salvar</button>
+    </div>`);
+  $("chooseProfile").onclick=()=>$("profileInput").click();
+  $("saveProfile").onclick=async()=>{
+    const name=$("profileName").value.trim()||"Você";
+    state.profile.name=name;await saveSetting("profile",state.profile);closeModal();await renderHeader();await renderMessages();toast("Perfil salvo");
+  };
+}
+$("profileInput").onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  state.profile.avatarId=await saveMediaBlob(f);await saveSetting("profile",state.profile);e.target.value="";toast("Foto de perfil salva");
+};
+
+function showSettings(){
+  openModal("⚙️ Configurações",`
+    <div class="menu-row"><span>🌙 Tema escuro</span><label class="switch"><input id="darkSwitch" type="checkbox" ${state.theme==="dark"?"checked":""}><span></span></label></div>
+    <div class="menu-row"><span>🔔 Notificações do navegador</span><button class="secondary" id="notifBtn">Ativar</button></div>
+    <div class="menu-row"><span>🧹 Apagar todas as mensagens</span><button class="danger" id="clearMsgs">Apagar</button></div>
+    <div class="menu-row"><span>🗑️ Apagar todos os dados</span><button class="danger" id="clearAll">Zerar</button></div>
+    <p style="font-size:12px;color:var(--muted)">Os dados são armazenados localmente no navegador/Acode usando IndexedDB. Não há servidor nesta versão.</p>`);
+  $("darkSwitch").onchange=async e=>{state.theme=e.target.checked?"dark":"light";applyTheme();await saveSetting("theme",state.theme)};
+  $("notifBtn").onclick=requestNotifications;
+  $("clearMsgs").onclick=async()=>{if(confirm("Apagar todas as mensagens?")){await clearStore("messages");await loadConversations();closeModal();await renderList();await renderMessages();toast("Mensagens apagadas")}};
+  $("clearAll").onclick=async()=>{if(confirm("Isso apagará perfil, salas, conversas e mídia. Continuar?")){await clearStore("messages");await clearStore("media");await clearStore("conversations");await clearStore("settings");location.reload()}};
+}
+
+async function requestNotifications(){
+  if(!("Notification" in window)){toast("Notificações não suportadas");return}
+  const p=await Notification.requestPermission();
+  toast(p==="granted"?"Notificações ativadas":"Notificações não autorizadas");
+}
+
+async function toggleTheme(){
+  state.theme=state.theme==="dark"?"light":"dark";applyTheme();await saveSetting("theme",state.theme);
+}
+function applyTheme(){
+  document.documentElement.dataset.theme=state.theme;
+  $("themeBtn").textContent=state.theme==="dark"?"☀️":"🌙";
+}
+
+$("searchMessagesBtn").onclick=async()=>{
+  if(!state.currentId)return toast("Abra uma conversa primeiro");
+  openModal("🔎 Pesquisar mensagens",`
+    <div class="field"><label>Texto</label><input id="msgSearchInput" placeholder="Digite para pesquisar..."></div>
+    <div class="actions"><button class="primary" id="doMsgSearch">Pesquisar</button><button class="secondary" id="clearMsgSearch">Limpar</button></div>`);
+  $("doMsgSearch").onclick=async()=>{state.messageSearch=$("msgSearchInput").value.trim();closeModal();await renderMessages()};
+  $("clearMsgSearch").onclick=async()=>{state.messageSearch="";closeModal();await renderMessages()};
+};
+
+$("conversationInfoBtn").onclick=()=>{
+  const c=state.conversations.find(x=>x.id===state.currentId);if(!c)return;
+  openModal("ℹ️ Informações",`
+    <p><b>${esc(c.name)}</b></p>
+    <p style="color:var(--muted)">${esc(c.description||"")}</p>
+    <p style="font-size:12px;color:var(--muted)">Tipo: ${c.type==="room"?"Sala":"Conversa privada"}<br>Armazenamento: neste aparelho</p>
+    <div class="actions"><button class="danger" id="deleteConv">Excluir esta conversa</button></div>`);
+  $("deleteConv").onclick=async()=>{
+    if(!confirm("Excluir esta conversa e suas mensagens?"))return;
+    const ms=await getMessages(c.id);for(const m of ms){await remove("messages",m.id);if(m.mediaId)await remove("media",m.mediaId)}
+    await remove("conversations",c.id);state.currentId=null;closeModal();await loadConversations();await renderList();await renderHeader();await renderMessages();$("app").classList.remove("chat-open");
+  };
+};
+
+async function init(){
+  try{
+    await openDB();await loadSettings();await seed();await loadConversations();applyTheme();await renderList();
+    const first=state.conversations.find(c=>c.type==="private")||state.conversations[0];
+    if(first)await openConversation(first.id);
+  }catch(e){
+    console.error(e);toast("Erro ao abrir o armazenamento local");
+  }
+}
+init();
+</script>
+</body>
+</html>
